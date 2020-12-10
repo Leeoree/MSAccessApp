@@ -13,7 +13,7 @@ namespace MSAccessApp.Modules
         /// <param name="inputString"></param>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static string GetValueFromInput(string inputString, OleDbType? type)
+        public static string GetValueFromInput(string inputString, Type? type)
         {
             var splitedValues = inputString.Split(':');
             var cuttedString = "";
@@ -27,34 +27,19 @@ namespace MSAccessApp.Modules
                 cuttedString = inputString;
             }
 
-            // TODO переложить на плечи .NET
-            switch (type)
+            if (string.IsNullOrWhiteSpace(cuttedString)) { return ""; }
+
+            if (type == typeof(string))
             {
-                case OleDbType.BigInt:
-                    if (long.TryParse(cuttedString, out var number)) { return cuttedString; }
-                    return "";
-                case OleDbType.Guid:
-                    if (uint.TryParse(cuttedString, out var number1)) { return cuttedString; }
-                    return "";
-                case OleDbType.Integer:
-                    if (int.TryParse(cuttedString, out var number2)) { return cuttedString; }
-                    return "";
-                case OleDbType.VarChar:
-                case OleDbType.VarWChar:
-                case OleDbType.BSTR:
-                case OleDbType.Char:
-                case OleDbType.LongVarChar:
-                case OleDbType.LongVarWChar:
-                    return cuttedString;
-                case OleDbType.Date:
-                case OleDbType.DBDate:
-                     if (DateTime.TryParse(cuttedString, out var dateTime)) { return cuttedString; }
-                    return "";
-                default:
-                    break;
+                return "'" + cuttedString + "'";
             }
 
-            return inputString;
+            if (type == typeof(DateTime))
+            {
+                return "#" + cuttedString + "#";
+            }
+
+            return cuttedString.Trim();
         }
     }
 }

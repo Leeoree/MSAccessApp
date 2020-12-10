@@ -2,47 +2,48 @@
 using MSAccessApp.Persistence;
 using System;
 using System.Collections.Generic;
+using System.Data.OleDb;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
 namespace MSAccessApp.Forms
 {
-    public partial class AddEntityForm : Form
-    {
-        private readonly IDatabaseProvider _dataBaseProvider;
+    public partial class EditEntityFromTableForm : Form
+    { 
+        private readonly IDatabaseProvider _databaseProvider;
 
         private List<RadioButton> _tablesRadioButtons = new List<RadioButton>();
-        private Button _addEntityButton;
+        private Button _editEntityButton;
         private GroupBox _currentInputs;
 
-        public AddEntityForm(IDatabaseProvider databaseProvider)
+        public EditEntityFromTableForm(IDatabaseProvider databaseProvider)
         {
-            _dataBaseProvider = databaseProvider;
+            _databaseProvider = databaseProvider;
             InitializeComponent();
-            _addEntityButton = new Button();
-            _addEntityButton.Hide();
-            _addEntityButton.Text = "Добавить";
-            _addEntityButton.Location = new Point(650, 75);
-            _addEntityButton.Click += HandleOnSumbit;
-            Controls.Add(_addEntityButton);
+            _editEntityButton = new Button();
+            _editEntityButton.Hide();
+            _editEntityButton.Text = "Редактировать";
+            _editEntityButton.Location = new Point(650, 75);
+            _editEntityButton.Click += HandleOnSumbit;
+            _editEntityButton.Size = new Size(100, 40);
+            Controls.Add(_editEntityButton);
             PrintTablesList();
         }
 
         private void PrintTablesList()
         {
-            var tables = _dataBaseProvider.GetTables();
+            var tables = _databaseProvider.GetTables();
             var groupBox = new GroupBox();
             groupBox.Text = "Выберите таблицу";
             groupBox.Location = new Point(30, 70);
-            groupBox.Size = new Size(230, (tables.Count + 2) * 20);
+            groupBox.Size = new Size(220, (tables.Count + 2) * 20);
 
             var y = 20;
             foreach (var tableName in tables)
             {
                 var button = new RadioButton();
                 button.Location = new Point(31, y);
-                button.Size = new Size(190, 20);
                 button.Name = tableName;
                 button.Text = tableName;
                 button.CheckedChanged += HandleTablesCheckedChanged;
@@ -68,10 +69,10 @@ namespace MSAccessApp.Forms
                     _currentInputs?.Dispose();
                 }
 
-                _addEntityButton.Show();
+                _editEntityButton.Show();
                 var groupBox = new GroupBox();
-                groupBox.Text = "Заполните поля новой записи";
-                (var rows, var columns) = _dataBaseProvider.GetRowsFromTable(button.Name);
+                groupBox.Text = "Заполните поля, которые необходимо обновить";
+                (var rows, var columns) = _databaseProvider.GetRowsFromTable(button.Name);
                 groupBox.Location = new Point(300, 70);
                 groupBox.Size = new Size(320, (columns.Count) * 40 + 40);
 
@@ -96,29 +97,22 @@ namespace MSAccessApp.Forms
         {
             var tableName = _tablesRadioButtons.FirstOrDefault(_ => _.Checked).Name;
             var values = new string[_currentInputs.Controls.Count];
-            var typeOnColumns = _dataBaseProvider.GetTableColumnsWithTypes(tableName);
-            (var rows, var columns) = _dataBaseProvider.GetRowsFromTable(tableName);
-            var success = true;
+            var typeOnColumns = _databaseProvider.GetTableColumnsWithTypes(tableName);
+            (var rows, var columns) = _databaseProvider.GetRowsFromTable(tableName);
 
             for (var i = 0; i < _currentInputs.Controls.Count; ++i)
             {
-               values[i] = Parser.GetValueFromInput(_currentInputs.Controls[i].Text, typeOnColumns[columns[i]]);
-                success &= !string.IsNullOrEmpty(values[i]);
+                values[i] = Parser.GetValueFromInput(_currentInputs.Controls[i].Text, typeOnColumns[columns[i]]);
                 _currentInputs.Controls[i].Text = columns[i] + ":";
             }
 
-            if (success)
+            if (_databaseProvider.UpdateRowFromTable(tableName, values))
             {
-                success &= _dataBaseProvider.AddRowToTable(tableName, values);
-            }
-
-            if (success)
-            {
-                MessageBox.Show("Запись успешно добавлена.");
+                MessageBox.Show("Запись успешно обновлена.");
             }
             else
             {
-                MessageBox.Show("Запись добавлена не была. Попробуйте снова.");
+                MessageBox.Show("Запись обновлена не была. Попробуйте снова.");
             }
         }
     }

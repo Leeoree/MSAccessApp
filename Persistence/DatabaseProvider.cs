@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.OleDb;
 using System.Linq;
+using MSAccessApp.Modules;
 
 namespace MSAccessApp.Persistence
 {
@@ -68,7 +69,7 @@ namespace MSAccessApp.Persistence
         }
 
         /// <inheritdoc />
-        public IEnumerable<DataRow> GetRowsFromTable(string tableName, Func<IEnumerable<DataRow>, IEnumerable<DataRow>>? filterPredicat = null)
+        public (IEnumerable<DataRow> rows, List<string> columns) GetRowsFromTable(string tableName, Func<IEnumerable<DataRow>, IEnumerable<DataRow>>? filterPredicat = null)
         {
             var connectionsString = ConfigurationManager.ConnectionStrings["Database"];
 
@@ -84,9 +85,15 @@ namespace MSAccessApp.Persistence
 
                         adapter.Fill(dataSet);
 
-                        if (dataSet.Tables.Count == 0) { return new List<DataRow>(); }
+                        if (dataSet.Tables.Count == 0) { return (new List<DataRow>(), new List<string>()); }
 
-                        return dataSet.Tables[0].AsEnumerable();
+                        var orderedColumns = new List<string>();
+                        foreach(var column in dataSet.Tables[0].Columns)
+                        {
+                            orderedColumns.Add(column.ToString());
+                        }
+
+                        return (dataSet.Tables[0].AsEnumerable(), orderedColumns);  
                     }
                 }
                 catch (Exception e)
@@ -99,14 +106,14 @@ namespace MSAccessApp.Persistence
                 }
             }
 
-            return new List<DataRow>();
+            return (new List<DataRow>(), new List<string>());
         }
 
         /// <inheritdoc />
-        public Dictionary<string, OleDbType> GetTableColumnsWithTypes(string tableName)
+        public Dictionary<string, Type> GetTableColumnsWithTypes(string tableName)
         {
             var connectionsString = ConfigurationManager.ConnectionStrings["Database"].ConnectionString;
-            var result = new Dictionary<string, OleDbType>();
+            var result = new Dictionary<string, Type>();
 
             using (var connection = new OleDbConnection(connectionsString))
             {
@@ -115,25 +122,14 @@ namespace MSAccessApp.Persistence
                     lock (_syncRoot)
                     {
                         connection.Open();
-                        var schemaTable = connection.GetOleDbSchemaTable(
-                          OleDbSchemaGuid.Columns,
-                          new Object[] { null, null, tableName });
+                        var stringQuery = $"SELECT * FROM [{tableName}]";
+                        var adapter = new OleDbDataAdapter(stringQuery, connection);
+                        var dataSet = new DataSet();
+                        adapter.Fill(dataSet);
 
-                        if (schemaTable == null)
+                        foreach (DataColumn column in dataSet.Tables[0].Columns)
                         {
-                            return result;
-                        }
-
-                        var columnOrdinalForName = schemaTable.Columns["COLUMN_NAME"].Ordinal;
-                        var columnOrdinalForType = schemaTable.Columns["DATA_TYPE"].Ordinal;
-
-                        foreach(var row in schemaTable.Rows)
-                        {
-                            var dataRow = row as DataRow;
-
-                            if (dataRow == null) { continue; }
-
-                            result[dataRow.ItemArray[columnOrdinalForName].ToString()] = dataRow.ItemArray[columnOrdinalForType] as OleDbType? ?? OleDbType.IUnknown;
+                            result[column.ToString()] = column.DataType;
                         }
                     }
                 }
@@ -164,6 +160,7 @@ namespace MSAccessApp.Persistence
                     {
                         connection.Open();
                         var cmd = new OleDbCommand();
+
                         cmd.Connection = connection;
                         cmd.CommandText = $"INSERT INTO [{tableName}] VALUES({string.Join(", ", values)})";
                         cmd.ExecuteNonQuery();
@@ -210,6 +207,86 @@ namespace MSAccessApp.Persistence
                         if (dataSet.Tables[0].Rows.Count == 0) { return false; }
 
                         stringQuery = $"DELETE FROM [{tableName}]  WHERE [{keyColumn}]={id}";
+                        cmd.CommandText = stringQuery;
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Ошибка во время удаления записи из таблицы {tableName}: {e.Message}");
+                    return false;
+                }
+                finally
+                {
+                    connection?.Close();
+                }
+            }
+
+            return true;
+        }
+
+        public bool UpdateRowFromTable(string tableName, string[] values)
+        {
+            var connectionsString = ConfigurationManager.ConnectionStrings["Database"].ConnectionString;
+
+            using (var connection = new OleDbConnection(connectionsString))
+            {
+                try
+                {
+                    lock (_syncRoot)
+                    {
+                        connection.Open();
+                        var cmd = new OleDbCommand();
+                        cmd.Connection = connection;
+
+                        // Выбираем из аргументов ключевое поле
+                        var schemaTable = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Primary_Keys,
+                        new object[] { null, null, tableName });
+                        var keyColumn = schemaTable.Rows[0][3].ToString();
+
+                        var stringQuery = $"SELECT * FROM [{tableName}]";
+                        var adapter = new OleDbDataAdapter(stringQuery, connection);
+                        var dataSet = new DataSet();
+
+                        adapter.Fill(dataSet);
+
+
+                        var columns = new List<string>();
+                        foreach (var column in dataSet.Tables[0].Columns)
+                        {
+                            columns.Add(column.ToString());
+                        }
+
+                        var keyIndex = columns.IndexOf(keyColumn);
+
+                        // Проверяем, есть ли такая запись
+                        stringQuery = $"SELECT * FROM {tableName} WHERE [{keyColumn}]={values[keyIndex]}";
+                        dataSet = new DataSet();
+                        adapter.Fill(dataSet);
+
+                        if (dataSet.Tables[0].Rows.Count == 0) { return false; }
+
+                        // формируем кусок запроса на обновление, который идет после SET
+                        var setString = "";
+
+                        for (var i = 0; i < values.Length; ++i)
+                        {
+                            if (string.IsNullOrEmpty(values[i])) { continue; }
+                            if (i == keyIndex) { continue; }
+
+                            setString += $"[{columns[i]}] = {values[i]}, ";
+                        }
+
+                        if (string.IsNullOrEmpty(setString))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            setString = setString.Substring(0, setString.Length - 2);
+                        }
+
+                        stringQuery = $"UPDATE {tableName} SET {setString} WHERE [{keyColumn}]={values[keyIndex]}";
                         cmd.CommandText = stringQuery;
                         cmd.ExecuteNonQuery();
                     }
