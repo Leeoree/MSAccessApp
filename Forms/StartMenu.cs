@@ -1,5 +1,6 @@
 ﻿using MSAccessApp.Persistence;
 using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace MSAccessApp.Forms
@@ -14,24 +15,51 @@ namespace MSAccessApp.Forms
             InitializeComponent();
         }
 
-        private void HadnleOpenFormClick(object sender, EventArgs eventArgs)
+        private void CloseButton_Click(object sender, EventArgs e)
         {
-            var button = sender as Button;
+            this.Close();
+        }
 
-            if (button == null) { return; }
+        private void CloseButton_MouseEnter(object sender, EventArgs e)
+        {
+            CloseButton.BackColor = Color.Salmon;
+            CloseButton.ForeColor = Color.White;
+        }
 
-            // TODO вычислять имена кнопок налету через nameof([класс формы])
-            Form form = button.Name switch
-            {
-                "AllEntitiesFromTableFormButton" => new AllEntitiesFromTableForm(_databaseProvider),
-                "AddEntityFormButton" => new AddEntityForm(_databaseProvider),
-                "RemoveEntityFromTableFormButton" => new RemoveEntityFromTableForm(_databaseProvider),
-                "EditEntityFromTableFormButton" => new EditEntityFromTableForm(_databaseProvider),
-                "MSysObjectsFormButton" => new MSysObjectsForm(_databaseProvider),
-                 _ => null
-            };
+        private void CloseButton_MouseLeave(object sender, EventArgs e)
+        {
+            CloseButton.BackColor = Color.White;
+            CloseButton.ForeColor = Color.Black;
+        }
 
-            form?.Show();
+        private void AllEntitiesFromTableFormButton_Click(object sender, EventArgs e)
+        {
+            new AllEntitiesFromTableForm(_databaseProvider);
+        }
+
+        private void AddEntityFormButton_Click(object sender, EventArgs e)
+        {
+            new AddEntityForm(_databaseProvider);
+        }
+
+        private void RemoveEntityFromTableFormButton_Click(object sender, EventArgs e)
+        {
+            new RemoveEntityFromTableForm(_databaseProvider);
+        }
+
+        private void EditEntityFromTableFormButton_Click(object sender, EventArgs e)
+        {
+            new EditEntityFromTableForm(_databaseProvider);
+        }
+
+        private void MSysObjectsFormsButton_Click(object sender, EventArgs e)
+        {
+            new MSysObjectsForm(_databaseProvider);
+        }
+
+        private void Requests_Click(object sender, EventArgs e)
+        {
+            new AllRequests(_databaseProvider);
         }
     }
 }

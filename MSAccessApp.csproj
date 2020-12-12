@@ -76,6 +76,12 @@
     <Compile Include="Forms\AllEntitiesFromTableForm.Designer.cs">
       <DependentUpon>AllEntitiesFromTableForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\AllRequests.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\AllRequests.Designer.cs">
+      <DependentUpon>AllRequests.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\EditEntityFromTableForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -110,6 +116,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\AllEntitiesFromTableForm.resx">
       <DependentUpon>AllEntitiesFromTableForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AllRequests.resx">
+      <DependentUpon>AllRequests.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\EditEntityFromTableForm.resx">
+      <DependentUpon>EditEntityFromTableForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MSysObjectsForm.resx">
+      <DependentUpon>MSysObjectsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RemoveEntityFromTableForm.resx">
+      <DependentUpon>RemoveEntityFromTableForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\StartMenu.resx">
       <DependentUpon>StartMenu.cs</DependentUpon>

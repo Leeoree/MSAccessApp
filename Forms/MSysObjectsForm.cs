@@ -9,14 +9,15 @@ namespace MSAccessApp.Forms
     public partial class MSysObjectsForm : Form
     {
         private readonly IDatabaseProvider _databaseProvider;
-        private readonly int _listViewWidth = (int)(799 * 2);
-        private readonly int _listViewHieght = (int)(469 * 2);
+        private readonly int _listViewWidth = (int)(1920);
+        private readonly int _listViewHieght = (int)(1000);
 
         public MSysObjectsForm(IDatabaseProvider dataBaseProvider)
         {
             _databaseProvider = dataBaseProvider;
             InitializeComponent();
             ShowMSysObjectsTable();
+            this.Show();
         }
 
         private void ShowMSysObjectsTable()

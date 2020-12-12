@@ -25,15 +25,20 @@ namespace MSAccessApp.Forms
             _deleteEntityButton.Text = "Удалить";
             _deleteEntityButton.Location = new Point(650, 70);
             _deleteEntityButton.Click += HandleOnSumbit;
+            _deleteEntityButton.Dock = DockStyle.Fill;
+            _deleteEntityButton.Size = Nazad.Size;
+            _deleteEntityButton.BackColor = Color.White;
             Controls.Add(_deleteEntityButton);
             _deleteEntityButton.Hide();
             PrintTablesList();
+            this.Show();
         }
 
         private void PrintTablesList()
         {
             var tables = _databaseProvider.GetTables();
             var groupBox = new GroupBox();
+            groupBox.Dock = DockStyle.Fill;
             groupBox.Text = "Выберите таблицу";
             groupBox.Location = new Point(30, 70);
             groupBox.Size = new Size(220, (tables.Count + 2) * 20);
@@ -71,6 +76,7 @@ namespace MSAccessApp.Forms
                 _deleteEntityButton.Show();
 
                 var groupBox = new GroupBox();
+                groupBox.Dock = DockStyle.Top;
                 groupBox.Text = "Введите Id записи, которую необходимо удалить";
                 groupBox.Location = new Point(300, 70);
                 groupBox.Size = new Size(300, 70);
@@ -106,6 +112,13 @@ namespace MSAccessApp.Forms
             }
 
             _inputEntityId.Controls[0].Text = "";
+            _inputEntityId.Hide();
+            _deleteEntityButton.Hide();
+        }
+
+        private void Nazad_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

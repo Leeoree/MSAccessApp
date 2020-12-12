@@ -23,18 +23,23 @@ namespace MSAccessApp.Forms
             InitializeComponent();
             _editEntityButton = new Button();
             _editEntityButton.Hide();
-            _editEntityButton.Text = "Редактировать";
+            _editEntityButton.Text = "Применить";
             _editEntityButton.Location = new Point(650, 75);
             _editEntityButton.Click += HandleOnSumbit;
             _editEntityButton.Size = new Size(100, 40);
+            _editEntityButton.BackColor = Color.White;
+            _editEntityButton.Dock = DockStyle.Fill;
+            _editEntityButton.Size = Nazad.Size;
             Controls.Add(_editEntityButton);
             PrintTablesList();
+            this.Show();
         }
 
         private void PrintTablesList()
         {
             var tables = _databaseProvider.GetTables();
             var groupBox = new GroupBox();
+            groupBox.Dock = DockStyle.Fill;
             groupBox.Text = "Выберите таблицу";
             groupBox.Location = new Point(30, 70);
             groupBox.Size = new Size(220, (tables.Count + 2) * 20);
@@ -71,6 +76,7 @@ namespace MSAccessApp.Forms
 
                 _editEntityButton.Show();
                 var groupBox = new GroupBox();
+                groupBox.Dock = DockStyle.Top;
                 groupBox.Text = "Заполните поля, которые необходимо обновить";
                 (var rows, var columns) = _databaseProvider.GetRowsFromTable(button.Name);
                 groupBox.Location = new Point(300, 70);
@@ -80,12 +86,17 @@ namespace MSAccessApp.Forms
 
                 foreach (var column in columns)
                 {
+                    var description = new Label();
                     var input = new TextBox();
-                    input.Location = new Point(5, y);
+                    description.Location = new Point(5, y);
+                    description.Size = new Size(300, 30);
+                    description.TextAlign = ContentAlignment.TopRight;
+                    description.Text = $"{column}:";
+                    input.Location = new Point(315, y);
                     input.Size = new Size(300, 30);
-                    input.Text = $"{column}:";
                     y += 40;
                     groupBox.Controls.Add(input);
+                    groupBox.Controls.Add(description);
                 }
 
                 Controls.Add(groupBox);
@@ -99,21 +110,34 @@ namespace MSAccessApp.Forms
             var values = new string[_currentInputs.Controls.Count];
             var typeOnColumns = _databaseProvider.GetTableColumnsWithTypes(tableName);
             (var rows, var columns) = _databaseProvider.GetRowsFromTable(tableName);
+            try
+            {
+                for (var i = 0; i < _currentInputs.Controls.Count; ++i)
+                {
+                    values[i] = Parser.GetValueFromInput(_currentInputs.Controls[i].Text, typeOnColumns[columns[i]]);
+                    _currentInputs.Controls[i].Text = columns[i] + ":";
+                }
 
-            for (var i = 0; i < _currentInputs.Controls.Count; ++i)
-            {
-                values[i] = Parser.GetValueFromInput(_currentInputs.Controls[i].Text, typeOnColumns[columns[i]]);
-                _currentInputs.Controls[i].Text = columns[i] + ":";
+                if (_databaseProvider.UpdateRowFromTable(tableName, values))
+                {
+                    MessageBox.Show("Запись успешно обновлена.");
+                }
+                else
+                {
+                    MessageBox.Show("Запись обновлена не была. Попробуйте снова.");
+                }
             }
+            catch(ArgumentOutOfRangeException)
+            {
+                MessageBox.Show("Записи с таким идентификатором в таблице нет. Попробуйте снова.");
+            }
+            _currentInputs.Hide();
+            _editEntityButton.Hide();
+        }
 
-            if (_databaseProvider.UpdateRowFromTable(tableName, values))
-            {
-                MessageBox.Show("Запись успешно обновлена.");
-            }
-            else
-            {
-                MessageBox.Show("Запись обновлена не была. Попробуйте снова.");
-            }
+        private void Nazad_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }
